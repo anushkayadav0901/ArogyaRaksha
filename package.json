@@ -1,0 +1,54 @@
+{
+  "name": "uber-hospital-and-emergency",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "functions"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "build:functions": "npm run build -w resqmed-functions",
+    "serve:functions": "npm run serve -w resqmed-functions",
+    "build:all": "npm run build && npm run build:functions",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
+    "deploy": "npm run build:all && firebase deploy"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
+    "@eslint/js": "^9.39.4",
+    "@types/google.maps": "^3.64.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.5.0",
+    "clsx": "^2.1.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "firebase": "^10.14.1",
+    "framer-motion": "^12.38.0",
+    "globals": "^17.5.0",
+    "lucide-react": "^1.8.0",
+    "postcss": "^8.5.10",
+    "prettier": "^3.8.3",
+    "react-router-dom": "^7.14.1",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.4",
+    "zod": "^4.3.6"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.4.0",
+    "i18next": "^26.3.1",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-i18next": "^17.0.8"
+  }
+}

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Aarogya Raksha favicon -->
+  <!-- Red rounded square + clean white emergency-bell glyph, designed to stay
+       legible down to 16x16 (browser tab size). -->
+
+  <!-- Background -->
+  <rect x="0" y="0" width="64" height="64" rx="16" ry="16" fill="#E53935"/>
+
+  <!-- Sound waves (outer, subtle) -->
+  <path d="M14 26 Q10 32 14 38" fill="none" stroke="#FFFFFF" stroke-width="3"
+        stroke-linecap="round" stroke-opacity="0.55"/>
+  <path d="M50 26 Q54 32 50 38" fill="none" stroke="#FFFFFF" stroke-width="3"
+        stroke-linecap="round" stroke-opacity="0.55"/>
+
+  <!-- Bell body -->
+  <path d="M32 14
+           C 22 14 20 22 20 30
+           L 20 38
+           L 18 42
+           L 46 42
+           L 44 38
+           L 44 30
+           C 44 22 42 14 32 14 Z"
+        fill="#FFFFFF"/>
+
+  <!-- Bell clapper -->
+  <circle cx="32" cy="48" r="3.2" fill="#FFFFFF"/>
+
+  <!-- Heartbeat slash across the bell (Raksha = protect) -->
+  <path d="M24 32 L29 32 L31 27 L33 37 L35 32 L40 32"
+        fill="none" stroke="#E53935" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

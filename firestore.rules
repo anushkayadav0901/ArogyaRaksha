@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function hasRole(role) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(uid()))
+        && get(/databases/$(database)/documents/users/$(uid())).data.role == role;
+    }
+
+    function isPatientSelf(patientId) {
+      return isSignedIn() && patientId == uid();
+    }
+
+    // Users (public profile + role)
+    match /users/{userId} {
+      allow read: if isSignedIn() && userId == uid();
+      allow create: if isSignedIn() && userId == uid();
+      allow update: if isSignedIn() && userId == uid();
+      allow delete: if false;
+    }
+
+    // Phone → uid index used by the login page to check whether a number is
+    // registered BEFORE sending an OTP (avoids SMS waste + orphan auth users).
+    // Doc id is the 10-digit phone; value is { uid }.
+    match /phoneIndex/{phone} {
+      allow get: if true;
+      allow create: if isSignedIn() && request.resource.data.uid == uid();
+      allow update: if isSignedIn()
+        && request.resource.data.uid == uid()
+        && resource.data.uid == uid();
+      allow delete: if false;
+    }
+
+    // Patient profile (we keep patientId = uid for simple rules)
+    match /patients/{patientId} {
+      allow read, create, update: if isPatientSelf(patientId);
+      allow delete: if false;
+    }
+
+    // Hospitals & doctors (admin-managed)
+    match /hospitals/{hospitalId} {
+      allow read: if true;
+      allow write: if hasRole('hospital_admin') || hasRole('admin');
+    }
+
+    match /doctors/{doctorId} {
+      allow read: if true;
+      allow write: if hasRole('hospital_admin') || hasRole('admin') || hasRole('doctor');
+    }
+
+    // Appointments
+    match /appointments/{appointmentId} {
+      allow read: if isSignedIn() && (resource.data.patientId == uid() || resource.data.doctorId == uid());
+      allow create: if isSignedIn() && request.resource.data.patientId == uid();
+      allow update: if isSignedIn()
+        && (
+          resource.data.patientId == uid() // patient can cancel/reschedule their own
+          || resource.data.doctorId == uid() // doctor can mark completed, attach summary
+        );
+      allow delete: if isSignedIn() && resource.data.patientId == uid();
+    }
+
+    // Medical records metadata (files stored in Storage, referenced here)
+    match /medicalRecords/{recordId} {
+      allow read: if isSignedIn() && (
+        resource.data.patientId == uid()
+        || resource.data.doctorId == uid()
+      );
+      allow create: if isSignedIn() && request.resource.data.patientId == uid();
+      allow update: if isSignedIn() && (
+        resource.data.patientId == uid()
+        || resource.data.doctorId == uid()
+      );
+      allow delete: if isSignedIn() && resource.data.patientId == uid();
+    }
+
+    // SOS Requests
+    // ⚡ Emergency: allow guest (unauthenticated) users to CREATE a panic SOS
+    //    Victim must either be guest OR must match their own uid
+    match /sosRequests/{requestId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // SOS Assignments
+    // ⚡ Emergency: allow anyone to read/create assignments
+    //    Helpers need to create, victims need to read who's coming. Both may be guest.
+    match /sosAssignments/{assignmentId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // SOS Chat Messages
+    // ⚡ Emergency: allow anyone to read/write chat messages (guests included)
+    match /sosMessages/{messageId} {
+      allow read, write: if true;
+    }
+
+    // SOS Timeline Events
+    // ⚡ Emergency: allow anyone to read/write live timeline events
+    match /timelineEvents/{eventId} {
+      allow read, write: if true;
+    }
+
+    // Smart Helmet telemetry — one doc per user, written by the helmet's
+    // companion sync (or our pair flow), read by the user's app.
+    match /helmets/{ownerUid} {
+      allow read:   if isSignedIn() && ownerUid == uid();
+      allow create, update: if isSignedIn() && ownerUid == uid();
+      allow delete: if isSignedIn() && ownerUid == uid();
+    }
+
+    // Hospital alerts
+    // ⚡ Helpers create these to notify a hospital that they're inbound with a
+    //    patient from an SOS. The future hospital portal will read these scoped
+    //    by hospitalId. Victim and helper can read alerts on their own request
+    //    so the SOS UI shows "Helper has alerted St. Mary's Hospital".
+    match /hospitalAlerts/{alertId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // Helpers profile
+    match /helpers/{helperId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && helperId == uid();
+      allow delete: if false;
+    }
+
+    // Points ledger + balances (used by src/data/points.ts)
+    match /pointLedger/{entryId} {
+      allow read: if isSignedIn() && (resource.data.userId == uid() || hasRole('admin'));
+      allow create: if isSignedIn()
+        && request.resource.data.userId == uid()
+        && request.resource.data.points is number
+        && request.resource.data.points > 0
+        && request.resource.data.points <= 500;
+      allow update, delete: if false;
+    }
+
+    match /pointBalances/{userId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && userId == uid();
+      allow delete: if false;
+    }
+
+    // Legacy name kept for older deployments
+    match /coinLedger/{entryId} {
+      allow read: if isSignedIn() && (resource.data.userId == uid() || hasRole('admin'));
+      allow create: if hasRole('admin');
+      allow update, delete: if false;
+    }
+  }
+}
+
